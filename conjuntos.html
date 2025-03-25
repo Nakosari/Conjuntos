@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Optimización de Cortes</title>
+  <style>
+    /* Estilo oscuro y moderno */
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background-color: #1e1e1e;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      color: #ffffff;
+    }
+    textarea, input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border: none;
+      border-radius: 4px;
+      background-color: #2c2c2c;
+      color: #e0e0e0;
+      font-size: 16px;
+    }
+    button {
+      background-color: #3a3a3a;
+      color: #e0e0e0;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #505050;
+    }
+    .output {
+      background-color: #2c2c2c;
+      padding: 15px;
+      border-radius: 4px;
+      min-height: 150px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Algoritmo de conjuntos 25/03/25</h1>
+    <p>Introduce las medidas en formato <em>"75.8 x 81"</em> o <em>"75.8x81"</em>, una por línea:</p>
+    <textarea id="medidas" rows="8" placeholder="Ejemplo:
+75.8 x 81
+80x90
+..."></textarea>
+    <p>Introduce la longitud completa del perfil:</p>
+    <input type="number" id="perfilCompleto" placeholder="Medida del perfil" step="0.01">
+    <div style="text-align: center;">
+      <button onclick="procesarDatos()">Calcular</button>
+    </div>
+    <h2>Resultados</h2>
+    <div id="resultado" class="output"></div>
+  </div>
+
+  <script>
+    // Función auxiliar para sumar los valores de un array
+    function sumarArray(arr) {
+      return arr.reduce((total, num) => total + num, 0);
+    }
+
+    // Función que implementa el algoritmo First Fit Decreasing
+    function agruparPiezas(piezas, perfilCompleto) {
+      // Ordenar piezas de mayor a menor
+      piezas.sort((a, b) => b - a);
+      let perfiles = [];
+      // Recorremos cada pieza
+      piezas.forEach(corte => {
+        let encaja = false;
+        // Intentar ubicar en perfiles existentes
+        for (let i = 0; i < perfiles.length; i++) {
+          if (sumarArray(perfiles[i]) + corte <= perfilCompleto) {
+            perfiles[i].push(corte);
+            encaja = true;
+            break;
+          }
+        }
+        // Si no encaja en ninguno, crear un nuevo perfil
+        if (!encaja) {
+          perfiles.push([corte]);
+        }
+      });
+      return perfiles;
+    }
+
+    // Función para el efecto de escritura letra por letra
+    function escribirConEfecto(texto, elemento, velocidad = 30) {
+      let index = 0;
+      elemento.textContent = "";
+      let intervalo = setInterval(() => {
+        if (index < texto.length) {
+          elemento.textContent += texto.charAt(index);
+          index++;
+        } else {
+          clearInterval(intervalo);
+        }
+      }, velocidad);
+    }
+
+    // Función principal para procesar la información
+    function procesarDatos() {
+      const textarea = document.getElementById("medidas");
+      const perfilInput = document.getElementById("perfilCompleto");
+      const resultadoDiv = document.getElementById("resultado");
+
+      // Validar entrada de perfil
+      const perfilCompleto = parseFloat(perfilInput.value);
+      if (isNaN(perfilCompleto) || perfilCompleto <= 0) {
+        alert("Por favor, introduce una medida válida para el perfil.");
+        return;
+      }
+
+      // Obtener las líneas y procesar cada una
+      const lineas = textarea.value.split(/\r?\n/);
+      let piezas = [];
+      lineas.forEach(linea => {
+        linea = linea.trim();
+        if (linea !== "") {
+          // Eliminar espacios y separar por "x" (independientemente de mayúsculas o minúsculas)
+          linea = linea.replace(/\s+/g, "");
+          let separador = linea.toLowerCase().indexOf("x");
+          if (separador !== -1) {
+            let valor1 = parseFloat(linea.substring(0, separador));
+            let valor2 = parseFloat(linea.substring(separador + 1));
+            if (!isNaN(valor1) && !isNaN(valor2)) {
+              piezas.push(valor1);
+              piezas.push(valor2);
+            }
+          }
+        }
+      });
+
+      if (piezas.length === 0) {
+        alert("No se han encontrado medidas válidas.");
+        return;
+      }
+
+      // Aplicar el algoritmo de agrupación
+      const perfiles = agruparPiezas(piezas, perfilCompleto);
+
+      // Construir el reporte de resultados
+      let reporte = "";
+      reporte += "Total de perfiles necesarios: " + perfiles.length + "\n\n";
+      perfiles.forEach((perfil, idx) => {
+        reporte += "Perfil " + (idx + 1) + ":\n";
+        let suma = sumarArray(perfil);
+        perfil.forEach(corte => {
+          reporte += "  Corte: " + corte + "\n";
+        });
+        reporte += "  Suma de cortes: " + suma.toFixed(2) + "\n";
+        reporte += "  Desperdicio: " + (perfilCompleto - suma).toFixed(2) + "\n\n";
+      });
+
+      // Mostrar el reporte con efecto de escritura letra por letra,
+      // simulando la poética labor de generar la información.
+      escribirConEfecto(reporte, resultadoDiv, 30);
+    }
+  </script>
+</body>
+</html>
